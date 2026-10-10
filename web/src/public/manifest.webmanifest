@@ -1,0 +1,17 @@
+{
+  "name": "rubik_mega",
+  "short_name": "rubik_mega",
+  "description": "Twisty puzzles that solve themselves, step by step, in your browser: cubes from 3x3x3 to 8x8x8, Skewb, Pyraminx, Megaminx, Kilominx and Square-1.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

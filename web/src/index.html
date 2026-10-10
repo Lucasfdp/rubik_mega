@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover lets the page reach under a notch; the interface
+         keeps clear of it with env(safe-area-inset-*). Zooming is left
+         enabled (user-scalable=no is an accessibility anti-pattern); the
+         canvas sets touch-action: none, which is what stops the page
+         zooming where it would interfere. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#e7ebf3" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark light" />
+    <title>rubik_mega: twisty puzzles that solve themselves</title>
+    <meta
+      name="description"
+      content="Twisty puzzles that solve themselves, step by step, in your browser: cubes from 3x3x3 to 8x8x8, Skewb, Pyraminx, Megaminx, Kilominx and Square-1."
+    />
+    <!-- Open Graph and Twitter need absolute URLs to show a picture; the host
+         is not decided yet (docs/en/13-phase6-polish.md, open question 4), so
+         the image is relative until it is, and previews will not show it. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="rubik_mega" />
+    <meta property="og:description" content="Twisty puzzles that solve themselves, step by step, in your browser." />
+    <meta property="og:image" content="./og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <style>
+      /* Everything the first paint needs, inline, so a slow connection never
+         shows a blank page: the page colour and the splash. The rest of the
+         styling arrives with the app's stylesheet. */
+      html, body { margin: 0; height: 100%; background: #0b0d12; }
+      @media (prefers-color-scheme: light) { html, body { background: #e7ebf3; } }
+      #splash {
+        position: fixed; inset: 0; z-index: 20;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+        background: inherit; color: #a1a9ba;
+        font: 600 0.9375rem/1 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: 0.04em;
+      }
+      @media (prefers-color-scheme: light) { #splash { color: #566074; } }
+      #splash .cube {
+        width: 2.5rem; height: 2.5rem; border-radius: 0.5rem;
+        background: conic-gradient(#ffffff 0 25%, #009e60 0 50%, #c41e3a 0 75%, #ffd500 0);
+        animation: splash-spin 1.1s linear infinite;
+      }
+      @keyframes splash-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { #splash .cube { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <div id="splash" role="status" aria-live="polite"><div class="cube"></div><span>rubik_mega</span></div>
+    <noscript>rubik_mega needs JavaScript, WebGL and WebAssembly to run.</noscript>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

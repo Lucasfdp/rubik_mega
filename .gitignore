@@ -1,0 +1,17 @@
+# Dependencies and build output
+node_modules/
+web/dist/
+core/build/
+*.tsbuildinfo
+*.log
+
+# Scratch and agent leftovers
+web/_to_delete/
+Claude outputs/
+.DS_Store
+
+# Planning, decision and handoff notes: kept local, not published.
+# Every Markdown file is ignored except the README.
+*.md
+!README.md
+docs/

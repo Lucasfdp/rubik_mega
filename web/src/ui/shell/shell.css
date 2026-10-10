@@ -1,0 +1,854 @@
+/* The interface around the 3D view (docs/en/13-phase6-polish.md D7).
+ *
+ * Plain CSS, no framework. Three rules keep it adjustable across
+ * devices:
+ *  1. Every size is in rem, so the "Interface size" setting (which
+ *     sets the root font size) scales the whole interface together.
+ *     The one exception is the 44px minimum touch target.
+ *  2. Layout is chosen by JavaScript (layout.ts) and written to
+ *     data-layout, so the camera framing and the CSS always agree. There
+ *     are no media queries on width here.
+ *  3. Every edge keeps clear of notches and home indicators with the
+ *     safe-area insets.
+ *
+ * The tokens at the top are the only place colours and metrics live.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Metrics. */
+  --touch: max(44px, 2.75rem);
+  --radius: 0.875rem;
+  --gap-panel: 0.75rem;
+  --panel-w: clamp(19rem, 26vw, 26rem);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* Dark theme (the default). */
+  --bg-0: #0b0d12;
+  --bg-1: #1b2030;
+  --surface: rgba(24, 28, 38, 0.74);
+  --surface-solid: #181c26;
+  --surface-raised: rgba(255, 255, 255, 0.08);
+  --text: #eef1f6;
+  --text-dim: #a1a9ba;
+  --border: rgba(255, 255, 255, 0.14);
+  --accent: #4c8dff;
+  --accent-text: #ffffff;
+  --focus: #8ab4ff;
+  --highlight: #ffd500;
+  --highlight-text: #111111;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg-0: #e7ebf3;
+    --bg-1: #ffffff;
+    --surface: rgba(255, 255, 255, 0.78);
+    --surface-solid: #ffffff;
+    --surface-raised: rgba(0, 0, 0, 0.06);
+    --text: #10131a;
+    --text-dim: #566074;
+    --border: rgba(0, 0, 0, 0.14);
+    --accent: #1f5fe0;
+    --focus: #1f5fe0;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-0: #e7ebf3;
+  --bg-1: #ffffff;
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-solid: #ffffff;
+  --surface-raised: rgba(0, 0, 0, 0.06);
+  --text: #10131a;
+  --text-dim: #566074;
+  --border: rgba(0, 0, 0, 0.14);
+  --accent: #1f5fe0;
+  --focus: #1f5fe0;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  height: 100dvh;
+  background: radial-gradient(120% 95% at 50% 38%, var(--bg-1), var(--bg-0)) fixed;
+  color: var(--text);
+  font: 400 0.875rem/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.stage-canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  touch-action: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---- Shell: sits over the canvas, lets the canvas have every touch the
+   interface does not claim. ---- */
+
+.shell {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+.shell > .topbar > *,
+.shell > .panel {
+  pointer-events: auto;
+}
+
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+.icon--small {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Frosted glass where the browser can do it, solid where it cannot. */
+.pill,
+.icon-button,
+.panel {
+  background: var(--surface-solid);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .pill,
+  .icon-button,
+  .panel {
+    background: var(--surface);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+  }
+}
+
+/* ---- Top bar ---- */
+
+.topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: calc(var(--safe-top) + 0.5rem) calc(var(--safe-right) + 0.75rem) 0.5rem calc(var(--safe-left) + 0.75rem);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.topbar__spacer {
+  flex: 1;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: var(--touch);
+  padding: 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font: 600 1rem/1 inherit;
+  cursor: pointer;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* ---- Panel: bottom sheet on compact, side column on regular ---- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.panel__header {
+  flex: none;
+}
+
+.panel__handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 1.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  cursor: grab;
+  /* The drag is handled by pointer events; the browser must not scroll. */
+  touch-action: none;
+}
+.panel__grabber {
+  width: 2.5rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.status {
+  padding: 0 1rem 0.5rem;
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+  min-height: 1.2em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actionbar {
+  padding: 0 1rem 0.75rem;
+}
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: var(--touch);
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: 600 1rem/1 inherit;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn--primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.btn--icon {
+  padding: 0;
+}
+
+.panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem 1rem 1rem;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+}
+.field > label {
+  min-width: 4.25rem;
+  color: var(--text-dim);
+}
+.field--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+.field__value {
+  min-width: 3.5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.select {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+}
+.range {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  accent-color: var(--accent);
+}
+
+.link-button {
+  align-self: flex-start;
+  min-height: var(--touch);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  cursor: pointer;
+}
+.link-button:hover {
+  color: var(--text);
+}
+
+.move-list {
+  max-height: 40dvh;
+  overflow-y: auto;
+  font: 0.875rem/1.8 ui-monospace, "SF Mono", Menlo, monospace;
+}
+.move {
+  display: inline-block;
+  padding: 0 0.2em;
+  border-radius: 0.25em;
+}
+.move--done {
+  opacity: 0.4;
+}
+.move--current {
+  background: var(--highlight);
+  color: var(--highlight-text);
+  font-weight: 700;
+}
+
+/* Compact: the panel is a sheet. --sheet-full is its height and
+   --sheet-offset how far it is pushed down, both set by bottom-sheet.ts;
+   the fallbacks cover the moment before the script runs. */
+.shell[data-layout="compact"] .panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--sheet-full, 40dvh);
+  padding-bottom: var(--safe-bottom);
+  border-bottom: 0;
+  border-radius: 1.25rem 1.25rem 0 0;
+  transform: translateY(var(--sheet-offset, 0px));
+  transition: transform 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+.shell[data-layout="compact"] .panel[data-dragging] {
+  transition: none;
+}
+.shell[data-layout="compact"] .panel-toggle {
+  display: none;
+}
+
+/* Regular: the panel is a column on the right, and can be hidden. */
+.shell[data-layout="regular"] .panel {
+  position: absolute;
+  top: calc(var(--safe-top) + var(--gap-panel));
+  right: calc(var(--safe-right) + var(--gap-panel));
+  bottom: calc(var(--safe-bottom) + var(--gap-panel));
+  width: var(--panel-w);
+  border-radius: var(--radius);
+  transition: transform 0.25s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+.shell[data-layout="regular"] .panel__handle {
+  display: none;
+}
+.shell[data-layout="regular"] .panel__header {
+  padding-top: 0.75rem;
+}
+.shell[data-layout="regular"] .status {
+  white-space: normal;
+}
+.shell[data-layout="regular"][data-panel="open"] .topbar {
+  right: calc(var(--panel-w) + var(--gap-panel) * 2 + var(--safe-right));
+}
+.shell[data-layout="regular"][data-panel="closed"] .panel {
+  transform: translateX(calc(100% + var(--gap-panel) * 2 + var(--safe-right)));
+}
+
+/* While another puzzle loads. */
+.shell[data-loading] .panel {
+  opacity: 0.7;
+}
+
+/* ---- Dialogs: a bottom sheet on compact, a centred card otherwise ---- */
+
+.dialog {
+  /* The shell is pointer-events: none so the canvas underneath stays
+     draggable; a dialog inherits that, so without this its clicks fall
+     through to the puzzle and its buttons never fire. */
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--surface-solid);
+  color: var(--text);
+}
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+.shell[data-layout="compact"] .dialog {
+  width: 100%;
+  max-width: 100vw;
+  margin: auto 0 0;
+  padding-bottom: calc(1rem + var(--safe-bottom));
+  border-bottom: 0;
+  border-radius: 1.25rem 1.25rem 0 0;
+}
+.dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.dialog__title {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.75rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--touch);
+  padding: 0.75rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-raised);
+  color: inherit;
+  font: 600 0.9375rem/1.2 inherit;
+  cursor: pointer;
+}
+.card[aria-pressed="true"],
+.chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.glyph {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+.picker__label {
+  margin: 1rem 0 0.5rem;
+  color: var(--text-dim);
+}
+.picker__sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.chip {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-raised);
+  color: inherit;
+  font: 600 1rem/1 inherit;
+  cursor: pointer;
+}
+
+.segmented {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+}
+.segmented > legend {
+  margin-bottom: 0.4rem;
+  padding: 0;
+  color: var(--text-dim);
+}
+.segmented__row {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+.segmented__option {
+  position: relative;
+  flex: 1;
+}
+.segmented__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.segmented__option span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--touch) - 0.4rem);
+  border-radius: calc(var(--radius) - 0.2rem);
+  font-weight: 600;
+}
+.segmented__option input:checked + span {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.segmented__option input:focus-visible + span {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.segmented__note {
+  margin: 0.4rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+}
+
+/* ---- Phase 6 additions: now playing, timeline, stepper, toasts ---- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.actions:not(.actions--transport) .btn--icon {
+  flex: 0 0 var(--touch);
+}
+.btn--small {
+  flex: 0 0 auto;
+  min-width: var(--touch);
+  font-size: 1.25rem;
+}
+
+/* The move being played, large enough to read at arm's length. */
+.now {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0 1rem 0.35rem;
+}
+.now__move {
+  min-width: 3ch;
+  font: 700 2rem/1.1 ui-monospace, "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.now__meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+}
+.now__phase {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The solution as a bar of phases. The element is the touch target (tall);
+   the track inside it is the thin visible line. */
+.timeline-host {
+  padding: 0 1rem;
+}
+.timeline {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: var(--touch);
+  cursor: pointer;
+  touch-action: none;
+}
+.timeline__track {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  height: 0.6rem;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.timeline__segment {
+  position: relative;
+  flex-basis: 0;
+  min-width: 3px;
+  background: hsl(var(--hue) 35% 50% / 0.3);
+}
+.timeline__fill {
+  height: 100%;
+  background: hsl(var(--hue) 70% 55%);
+}
+.timeline:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+  border-radius: 0.5rem;
+}
+.timeline__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  display: none;
+  padding: 0.1rem 0;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.timeline__hint[data-shown] {
+  display: block;
+}
+
+.field__name {
+  min-width: 4.25rem;
+  color: var(--text-dim);
+}
+.stepper {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.stepper .field__value {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-weight: 600;
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.toasts {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--safe-top) + 4.25rem);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(26rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
+  border: 1px solid var(--border);
+  border-left-width: 0.3rem;
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  pointer-events: auto;
+}
+.toast--success {
+  border-left-color: #2ea66a;
+}
+.toast--error {
+  border-left-color: #e5484d;
+}
+.toast--info {
+  border-left-color: var(--accent);
+}
+.toast__text {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.toast__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--touch);
+  height: var(--touch);
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Settings: a switch row. */
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  cursor: pointer;
+}
+.toggle__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.toggle__label {
+  font-weight: 600;
+}
+.toggle__hint {
+  color: var(--text-dim);
+  font-size: 0.8125rem;
+}
+.toggle input {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  accent-color: var(--accent);
+}
+
+.shortcuts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.6rem 1rem;
+  margin: 0;
+}
+.shortcuts dt {
+  margin: 0;
+}
+.shortcuts dd {
+  margin: 0;
+  color: var(--text-dim);
+}
+kbd {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface-raised);
+  font: 600 0.8125rem/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--text);
+}
+
+/* ---- Debug overlay (?debug) ---- */
+
+.debug-overlay {
+  position: fixed;
+  top: calc(var(--safe-top) + 4.25rem);
+  left: calc(var(--safe-left) + 0.5rem);
+  z-index: 10;
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  background: rgba(0, 0, 0, 0.65);
+  color: #9fe29f;
+  font: 11px/1.35 ui-monospace, Menlo, monospace;
+  pointer-events: none;
+}
+
+/* ---- Fatal error screen ---- */
+
+.fatal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--bg-0);
+  color: var(--text);
+}
+.fatal h1 {
+  margin: 0;
+  font-size: 1.375rem;
+}
+.fatal p {
+  max-width: 28rem;
+  margin: 0;
+  color: var(--text-dim);
+}
+.fatal details {
+  max-width: min(40rem, 100%);
+  color: var(--text-dim);
+  text-align: left;
+}
+.fatal pre {
+  overflow: auto;
+  max-height: 40dvh;
+  white-space: pre-wrap;
+  font-size: 0.75rem;
+}
+
+/* Reduced motion: nothing slides or fades. The spinner keeps turning,
+   slowly, because a frozen one reads as a hang. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .spinner {
+    animation-duration: 2.4s !important;
+  }
+}
