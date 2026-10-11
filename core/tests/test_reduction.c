@@ -178,7 +178,7 @@ static void	test_solved_cube_needs_nothing_and_registry(void)
 		n++;
 	}
 	p = puzzle_create(PUZZLE_CUBIC, 3);
-	assert(puzzle_algorithm_count(p) == 4);
+	assert(puzzle_algorithm_count(p) == 3);
 	assert(puzzle_solve_max_moves(p) == CUBIC_N3_MAX_MOVES);
 	puzzle_destroy(p);
 	printf("test_reduction: solved -> 0 moves; registry per size -- OK\n");

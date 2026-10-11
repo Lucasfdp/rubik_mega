@@ -31,13 +31,11 @@
 /// longer). `TWOBYTWO_MAX_MOVES` is that proven bound, not a guess --
 /// ida_search() can never need more.
 ///
-/// There is no PUZZLE_2X2X2 shape in this project (docs/en/14-other-puzzles.md's
-/// own point, carried over: a 2x2x2's corner group is reused as-is, not
-/// modelled as a smaller NxN lattice) -- this is registered as a fourth
-/// algorithm choice for the existing cubic n==3 puzzle
-/// (docs/en/06-phase2-solvers.md's own sequencing), solving only that
-/// state's corners and ignoring its edges entirely, exactly as rubik's
-/// own `-p 2x2x2` view does on the same full t_cube.
+/// Registered as the one algorithm of the real 2x2x2 (cubic n == 2,
+/// corners only, see CUBIC_MIN_SIZE). It is deliberately NOT offered on
+/// the 3x3x3: there it solved only the corners and left the edges
+/// scrambled. The solver itself still reads a t_solve_cube, so the
+/// registry fills one from the 2x2x2's 16-byte state (edges left solved).
 # define TWOBYTWO_MAX_MOVES 11
 
 /// Everything the 2x2x2 solver needs, built once at startup. Unlike

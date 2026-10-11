@@ -3,13 +3,13 @@ import { PuzzleType } from "../../src/engine/types.js";
 import { DEFAULT_SIZE, PUZZLE_CHOICES, SUPPORTED_SIZES, choiceIndexFor, puzzleTitle, scrambleMovesFor, scrambleMovesForPuzzle } from "../../src/ui/puzzle-sizes.js";
 
 describe("puzzle sizes", () => {
-  it("offers 3..8 and opens on 3", () => {
-    expect(SUPPORTED_SIZES).toEqual([3, 4, 5, 6, 7, 8]);
+  it("offers 2..8 and opens on 3", () => {
+    expect(SUPPORTED_SIZES).toEqual([2, 3, 4, 5, 6, 7, 8]);
     expect(SUPPORTED_SIZES).toContain(DEFAULT_SIZE);
   });
 
   it("scramble lengths follow the WCA table (D4), 3x3x3 unchanged", () => {
-    expect(SUPPORTED_SIZES.map(scrambleMovesFor)).toEqual([25, 40, 60, 80, 100, 120]);
+    expect(SUPPORTED_SIZES.map(scrambleMovesFor)).toEqual([15, 25, 40, 60, 80, 100, 120]);
   });
 
   it("rejects a size with no entry", () => {

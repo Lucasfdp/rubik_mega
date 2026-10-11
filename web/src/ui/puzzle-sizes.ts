@@ -2,10 +2,10 @@ import { PuzzleType, SQ1_SCRAMBLE_SLICES } from "../engine/types.js";
 import type { GlyphKind } from "./shell/icons.js";
 
 /// Cube sizes the size picker offers (docs/en/07-nxn-web-view.md D5):
-/// 3 up to 8, the largest size core/ can build (a 9x9x9's 294 centres
+/// 2 up to 8, the largest size core/ can build (a 9x9x9's 294 centres
 /// overflow the state buffer's one-byte-per-piece limit --
 /// core/include/puzzles/cubic.h's CUBIC_CACHE_MAX comment).
-export const SUPPORTED_SIZES: readonly number[] = [3, 4, 5, 6, 7, 8];
+export const SUPPORTED_SIZES: readonly number[] = [2, 3, 4, 5, 6, 7, 8];
 
 /// The size the app opens on -- the one puzzle with solvers today.
 export const DEFAULT_SIZE = 3;
@@ -15,6 +15,9 @@ export const DEFAULT_SIZE = 3;
 /// this table existed, 8x8x8 extrapolated (+20 per size, the same step
 /// as the WCA's 5x5x5-to-7x7x7 lengths; there is no WCA 8x8x8 event).
 const SCRAMBLE_MOVES_BY_SIZE: Readonly<Record<number, number>> = {
+  // 2x2x2: its whole state space is 3.7 million positions, so 15 random
+  // moves (the WCA's own scrambles are 9-11 from a random state) mix it fully.
+  2: 15,
   3: 25,
   4: 40,
   5: 60,

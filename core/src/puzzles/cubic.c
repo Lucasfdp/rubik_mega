@@ -105,6 +105,11 @@ static t_shape	*cubic_build_shape(uint32_t n)
 	shape = malloc(sizeof(*shape));
 	shape->piece_type_count = 3;
 	shape->piece_types[CUBIC_CORNER_TYPE] = (t_piece_type){8, 3};
+	if (n == CUBIC_MIN_SIZE)
+	{
+		shape->piece_type_count = 1;	// a 2x2x2 is corners only
+		return (shape);
+	}
 	shape->piece_types[CUBIC_WING_TYPE] = (t_piece_type){
 		cubic_wing_count(n), 2};
 	shape->piece_types[CUBIC_CENTRE_TYPE] = (t_piece_type){
@@ -133,6 +138,14 @@ static t_generator	cubic_build_generator(uint32_t n, uint32_t face_idx,
 	uint32_t			j;
 
 	face = &CUBIC_FACES[face_idx];
+	if (n == CUBIC_MIN_SIZE)
+	{
+		// No wings or centres exist, so the lattice has nothing to cycle:
+		// a 2x2x2 face turn is the shared corner cycle alone.
+		cycles = malloc(sizeof(*cycles));
+		cycles[0] = *face->corner_cycle;
+		return ((t_generator){.cycle_count = 1, .cycles = cycles});
+	}
 	wing_tmp = malloc(sizeof(*wing_tmp) * (cubic_wing_count(n) / 4 + 1));
 	centre_tmp = malloc(sizeof(*centre_tmp) * (cubic_centre_count(n) / 4 + 1));
 	cubic_lattice_build_layer(n, face->axis, face->sign, depth,
@@ -233,7 +246,7 @@ const t_shape	*cubic_shape_for(uint32_t n)
 {
 	if (n == 3)
 		return (&CUBIC_3X3X3_SHAPE);
-	if (n < 4 || n >= CUBIC_CACHE_MAX)
+	if (n < CUBIC_MIN_SIZE || n >= CUBIC_CACHE_MAX)
 		return (NULL);
 	if (!g_shape_cache[n])
 		g_shape_cache[n] = cubic_build_shape(n);
@@ -244,7 +257,7 @@ const t_generator_table	*cubic_generators_for(uint32_t n)
 {
 	if (n == 3)
 		return (&CUBIC_3X3X3_GENERATOR_TABLE);
-	if (n < 4 || n >= CUBIC_CACHE_MAX)
+	if (n < CUBIC_MIN_SIZE || n >= CUBIC_CACHE_MAX)
 		return (NULL);
 	if (!g_table_cache[n])
 		g_table_cache[n] = cubic_build_table(n);

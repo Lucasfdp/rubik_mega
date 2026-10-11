@@ -181,6 +181,22 @@ static uint32_t	layer_algorithm_solve(const uint8_t *state, uint32_t size,
 	return ((uint32_t)count);
 }
 
+/// @brief Reads a 2x2x2 state buffer (corner perm then corner orient,
+///        the first 16 bytes of the 3x3x3 layout) into `cube`, leaving
+///        its edges solved -- the solver never reads them.
+static void	copy_corners_from_state(t_solve_cube *cube, const uint8_t *state)
+{
+	uint32_t	i;
+
+	i = 0;
+	while (i < SOLVE_CORNER_COUNT)
+	{
+		cube->corner_perm[i] = state[i];
+		cube->corner_orient[i] = state[SOLVE_CORNER_COUNT + i];
+		i++;
+	}
+}
+
 /// @brief t_algorithm's solve() shape, for the 2x2x2 (corners-only)
 ///        method. Same conversion pattern as the other three algorithms
 ///        above, but a single IDA* search with no stage/phase split
@@ -197,7 +213,8 @@ static uint32_t	two_algorithm_solve(const uint8_t *state, uint32_t size,
 	(void)size;
 	if (!ensure_two())
 		return (UINT32_MAX);
-	solve_cube_from_state(&cube, state);
+	cube = SOLVED_SOLVE_CUBE;
+	copy_corners_from_state(&cube, state);
 	count = two_solve(&g_two, &cube, moves);
 	if (count < 0 || (uint32_t)count > max_moves)
 		return (UINT32_MAX);
@@ -460,11 +477,20 @@ static const t_algorithm	CUBIC_N3_ALGORITHMS[] = {
 	{"Kociemba (two-phase)", kociemba_algorithm_solve},
 	{"Thistlethwaite (four-phase)", thistle_algorithm_solve},
 	{"Layer-by-layer (beginner)", layer_algorithm_solve},
-	{"2x2x2 (corners only)", two_algorithm_solve},
 };
 
 # define CUBIC_N3_ALGORITHM_COUNT \
 	(sizeof(CUBIC_N3_ALGORITHMS) / sizeof(CUBIC_N3_ALGORITHMS[0]))
+
+/// A real 2x2x2 (n == 2): its corners-only solver, now that the puzzle
+/// itself exists. It used to be offered on the 3x3x3, where it left the
+/// edges scrambled.
+static const t_algorithm	CUBIC_N2_ALGORITHMS[] = {
+	{"2x2x2 (corners only)", two_algorithm_solve},
+};
+
+# define CUBIC_N2_ALGORITHM_COUNT \
+	(sizeof(CUBIC_N2_ALGORITHMS) / sizeof(CUBIC_N2_ALGORITHMS[0]))
 
 /// Every n >= 4 gets exactly one algorithm: reduction to a 3x3x3.
 static const t_algorithm	CUBIC_NXN_ALGORITHMS[] = {
@@ -483,6 +509,8 @@ const t_kociemba_solver	*registry_kociemba(void)
 
 uint32_t	cubic_algorithm_count(uint32_t n)
 {
+	if (n == CUBIC_MIN_SIZE)
+		return (CUBIC_N2_ALGORITHM_COUNT);
 	if (n == 3)
 		return (CUBIC_N3_ALGORITHM_COUNT);
 	if (reduction_supports(n))
@@ -494,6 +522,8 @@ const t_algorithm	*cubic_algorithm(uint32_t n, uint32_t id)
 {
 	if (id >= cubic_algorithm_count(n))
 		return (NULL);
+	if (n == CUBIC_MIN_SIZE)
+		return (&CUBIC_N2_ALGORITHMS[id]);
 	if (n == 3)
 		return (&CUBIC_N3_ALGORITHMS[id]);
 	return (&CUBIC_NXN_ALGORITHMS[id]);
@@ -501,6 +531,8 @@ const t_algorithm	*cubic_algorithm(uint32_t n, uint32_t id)
 
 uint32_t	cubic_solve_max_moves(uint32_t n)
 {
+	if (n == CUBIC_MIN_SIZE)
+		return (TWOBYTWO_MAX_MOVES);
 	if (n == 3)
 		return (CUBIC_N3_MAX_MOVES);
 	if (reduction_supports(n))

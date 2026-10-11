@@ -183,12 +183,11 @@ static void	test_public_algorithm_api(void)
 	uint32_t	i;
 
 	p3 = puzzle_create(PUZZLE_CUBIC, 3);
-	assert(puzzle_algorithm_count(p3) == 4);
+	assert(puzzle_algorithm_count(p3) == 3);
 	assert(puzzle_algorithm_name(p3, 0) != NULL);
 	assert(puzzle_algorithm_name(p3, 1) != NULL);
 	assert(puzzle_algorithm_name(p3, 2) != NULL);
-	assert(puzzle_algorithm_name(p3, 3) != NULL);
-	assert(puzzle_algorithm_name(p3, 4) == NULL);
+	assert(puzzle_algorithm_name(p3, 3) == NULL);
 	solved = malloc(puzzle_state_size(p3));
 	memcpy(solved, puzzle_state_ptr(p3), puzzle_state_size(p3));
 	puzzle_scramble(p3, 20, 42);

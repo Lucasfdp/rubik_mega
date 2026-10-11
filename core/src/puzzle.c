@@ -42,7 +42,7 @@ static void	family_tables(t_puzzle_type type, uint32_t size,
 	*shape = NULL;
 	*generators = NULL;
 	family = cut_family_for(type, size);
-	if (type == PUZZLE_CUBIC && size >= 3)
+	if (type == PUZZLE_CUBIC && size >= CUBIC_MIN_SIZE)
 	{
 		*shape = cubic_shape_for(size);
 		*generators = cubic_generators_for(size);

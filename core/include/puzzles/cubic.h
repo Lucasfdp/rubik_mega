@@ -34,6 +34,11 @@
 /// every face loop and table size.
 # define CUBIC_FACE_COUNT 6
 
+/// Smallest cube core builds: a 2x2x2, corners only (no wings or centres,
+/// so its shape has a single piece type). Depth-0 face turns only --
+/// cubic_max_depth(2) is 0.
+# define CUBIC_MIN_SIZE 2
+
 /// Largest size + 1 this build caches a shape/generator/facelet table
 /// for. Well above what's useful anyway: shape_is_valid() already
 /// rejects any piece type over 255 instances, which centres
@@ -71,7 +76,7 @@ typedef struct s_cubic_face
 	const t_cycle	*corner_cycle;
 }	t_cubic_face;
 
-/// @brief This size's piece inventory -- NULL for n < 3 or an n this
+/// @brief This size's piece inventory -- NULL for n < 2 or an n this
 ///        build doesn't support (see CUBIC_CACHE_MAX above). n == 3
 ///        returns the existing, unchanged CUBIC_3X3X3_SHAPE; n >= 4
 ///        builds {corner, wing, centre} once and caches it for the rest

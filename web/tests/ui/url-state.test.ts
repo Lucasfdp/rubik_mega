@@ -8,7 +8,7 @@ describe("puzzleKey / puzzleFromKey", () => {
     for (const choice of PUZZLE_CHOICES) {
       expect(puzzleFromKey(puzzleKey(choice.type, choice.size))).toEqual({ type: choice.type, size: choice.size });
     }
-    for (const n of [3, 4, 5, 6, 7, 8]) expect(puzzleFromKey(puzzleKey(PuzzleType.Cubic, n))).toEqual({ type: PuzzleType.Cubic, size: n });
+    for (const n of [2, 3, 4, 5, 6, 7, 8]) expect(puzzleFromKey(puzzleKey(PuzzleType.Cubic, n))).toEqual({ type: PuzzleType.Cubic, size: n });
   });
 
   it("tells Megaminx from Kilominx, which share a puzzle type", () => {
@@ -17,7 +17,7 @@ describe("puzzleKey / puzzleFromKey", () => {
   });
 
   it("rejects names and sizes that mean nothing", () => {
-    for (const bad of ["", "dodecahedron", "cube:2", "cube:9", "cube:x", "skewb:3", "cube:3:1"]) expect(puzzleFromKey(bad), bad).toBeNull();
+    for (const bad of ["", "dodecahedron", "cube:1", "cube:9", "cube:x", "skewb:3", "cube:3:1"]) expect(puzzleFromKey(bad), bad).toBeNull();
   });
 });
 

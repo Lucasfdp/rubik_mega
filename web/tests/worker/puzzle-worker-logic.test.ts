@@ -48,15 +48,13 @@ describe("handlePuzzleWorkerRequest", () => {
     const module = await loadModule();
     const ref: PuzzleRef = { current: null };
 
-    // core/src/puzzle.c: `size < 3` is the bound that still rejects --
-    // a cubic puzzle now supports any size >= 3 (Phase 1's NxN work),
-    // so size 4 is no longer a usable "this fails" example (see the
-    // test right below, which documents that it now succeeds).
+    // core/src/puzzle.c: a cube below 2x2x2 is the bound that still
+    // rejects (sizes 2 and up all build, see the tests right below).
     const response = await handlePuzzleWorkerRequest(module, ref, {
       id: 0,
       kind: "create",
       puzzleType: PuzzleType.Cubic,
-      size: 2,
+      size: 1,
     });
 
     expect(response.kind).toBe("error");
@@ -191,7 +189,7 @@ describe("handlePuzzleWorkerRequest", () => {
     await handlePuzzleWorkerRequest(module, ref, { id: 0, kind: "create", puzzleType: PuzzleType.Cubic, size: 3 });
 
     const countResponse = await handlePuzzleWorkerRequest(module, ref, { id: 1, kind: "algorithmCount" });
-    expect(countResponse).toEqual({ id: 1, kind: "algorithmCount", count: 4 });
+    expect(countResponse).toEqual({ id: 1, kind: "algorithmCount", count: 3 });
 
     const nameResponse = await handlePuzzleWorkerRequest(module, ref, { id: 2, kind: "algorithmName", algoId: 0 });
     expect(nameResponse).toEqual({ id: 2, kind: "algorithmName", name: "Kociemba (two-phase)" });

@@ -35,12 +35,9 @@ describe("Puzzle", () => {
 
   it("rejects an unsupported (type, size) pair instead of returning a dead handle", async () => {
     const module = await loadModule();
-    // core/src/puzzle.c: `size < 3` is still rejected for every puzzle
-    // family (the only bound that still holds -- a cubic puzzle now
-    // supports any size >= 3, see the NxN test right below, which
-    // superseded the old "only size 3 works" assumption this test used
-    // to encode; HANDOFF.md, 2026-10-04).
-    expect(() => Puzzle.create(module, PuzzleType.Cubic, 2)).toThrow(/puzzle_create failed/);
+    // core/src/puzzle.c: a cube below CUBIC_MIN_SIZE (2, the corners-only
+    // 2x2x2) is still rejected; every size from 2 up builds.
+    expect(() => Puzzle.create(module, PuzzleType.Cubic, 1)).toThrow(/puzzle_create failed/);
   });
 
   it("creates a cubic puzzle for sizes beyond 3 too (Phase 1's NxN support)", async () => {
@@ -91,14 +88,21 @@ describe("Puzzle", () => {
     expect(() => puzzle.stateView()).toThrow(/used after destroy/);
   });
 
-  it("algorithmCount/algorithmName expose the 4 built cubic 3x3x3 algorithms", async () => {
+  it("algorithmCount/algorithmName expose the 3 built cubic 3x3x3 algorithms", async () => {
     const module = await loadModule();
     const puzzle = Puzzle.create(module, PuzzleType.Cubic, 3);
-    await expect(puzzle.algorithmCount()).resolves.toBe(4);
+    await expect(puzzle.algorithmCount()).resolves.toBe(3);
     await expect(puzzle.algorithmName(0)).resolves.toBe("Kociemba (two-phase)");
     await expect(puzzle.algorithmName(1)).resolves.toBe("Thistlethwaite (four-phase)");
     await expect(puzzle.algorithmName(2)).resolves.toBe("Layer-by-layer (beginner)");
-    await expect(puzzle.algorithmName(3)).resolves.toBe("2x2x2 (corners only)");
+    puzzle.destroy();
+  });
+
+  it("a real 2x2x2 offers the corners solver, and it solves a scramble completely", async () => {
+    const module = await loadModule();
+    const puzzle = Puzzle.create(module, PuzzleType.Cubic, 2);
+    await expect(puzzle.algorithmCount()).resolves.toBe(1);
+    await expect(puzzle.algorithmName(0)).resolves.toBe("2x2x2 (corners only)");
     puzzle.destroy();
   });
 

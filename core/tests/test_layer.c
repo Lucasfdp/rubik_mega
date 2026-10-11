@@ -207,7 +207,7 @@ static void	test_stage_boundaries_place_their_pieces(void)
 		}
 		apply_layer_moves(p, moves + phase_bounds[2],
 			phase_bounds[3] - phase_bounds[2]);
-		assert(puzzle_algorithm_count(p) == 4);
+		assert(puzzle_algorithm_count(p) == 3);
 		puzzle_destroy(p);
 		seed++;
 	}
@@ -229,7 +229,7 @@ static void	test_public_algorithm_api(void)
 	uint32_t	seen_phase;
 
 	p = puzzle_create(PUZZLE_CUBIC, 3);
-	assert(puzzle_algorithm_count(p) == 4);
+	assert(puzzle_algorithm_count(p) == 3);
 	assert(puzzle_algorithm_name(p, 2) != NULL);
 	solved = malloc(puzzle_state_size(p));
 	memcpy(solved, puzzle_state_ptr(p), puzzle_state_size(p));

@@ -143,38 +143,51 @@ static void	test_invalid_corners_refused(void)
 	printf("test_two_by_two: invalid corner-twist cube is refused -- OK\n");
 }
 
-/// The PUBLIC API, algorithm id 3 (ids 0-2 already covered by the other
-/// three algorithms' own test files).
+/// The PUBLIC API on a real 2x2x2 (n == 2): its only algorithm, id 0,
+/// solves the whole puzzle (it has no edges to leave behind), and the
+/// 3x3x3 no longer offers the corners-only solver -- on a 3x3x3 it left
+/// the edges scrambled.
 static void	test_public_algorithm_api(void)
 {
 	puzzle_t	*p;
-	uint8_t		*solved_corners_state;
-	t_solve_cube	cube;
+	uint8_t		*solved;
 	t_move		moves[TWOBYTWO_MAX_MOVES];
 	uint32_t	phase_tags[TWOBYTWO_MAX_MOVES];
 	uint32_t	count;
+	uint32_t	seed;
 	uint32_t	i;
 
-	p = puzzle_create(PUZZLE_CUBIC, 3);
-	assert(puzzle_algorithm_count(p) == 4);
-	assert(puzzle_algorithm_name(p, 3) != NULL);
-	solved_corners_state = malloc(puzzle_state_size(p));
-	memcpy(solved_corners_state, puzzle_state_ptr(p), puzzle_state_size(p));
-	puzzle_scramble(p, 20, 42);
-	count = puzzle_solve(p, 3, moves, TWOBYTWO_MAX_MOVES, phase_tags);
-	assert(count != 0xFFFFFFFFu && count <= TWOBYTWO_MAX_MOVES);
-	i = 0;
-	while (i < count)
+	seed = 1;
+	while (seed <= 50)
 	{
-		assert(phase_tags[i] == 0);
-		puzzle_apply_move(p, moves[i].generator, moves[i].amount);
-		i++;
+		p = puzzle_create(PUZZLE_CUBIC, 2);
+		assert(p != NULL);
+		assert(puzzle_algorithm_count(p) == 1);
+		assert(puzzle_algorithm_name(p, 0) != NULL);
+		assert(puzzle_algorithm_name(p, 1) == NULL);
+		assert(puzzle_solve_max_moves(p) == TWOBYTWO_MAX_MOVES);
+		solved = malloc(puzzle_state_size(p));
+		memcpy(solved, puzzle_state_ptr(p), puzzle_state_size(p));
+		puzzle_scramble(p, 20, seed);
+		count = puzzle_solve(p, 0, moves, TWOBYTWO_MAX_MOVES, phase_tags);
+		assert(count != 0xFFFFFFFFu && count <= TWOBYTWO_MAX_MOVES);
+		i = 0;
+		while (i < count)
+		{
+			assert(phase_tags[i] == 0);
+			puzzle_apply_move(p, moves[i].generator, moves[i].amount);
+			i++;
+		}
+		assert(memcmp(puzzle_state_ptr(p), solved, puzzle_state_size(p)) == 0);
+		free(solved);
+		puzzle_destroy(p);
+		seed++;
 	}
-	solve_cube_from_state(&cube, puzzle_state_ptr(p));
-	assert(two_cube_is_solved(&cube));
-	free(solved_corners_state);
+	p = puzzle_create(PUZZLE_CUBIC, 3);
+	assert(puzzle_algorithm_count(p) == 3);
 	puzzle_destroy(p);
-	printf("test_two_by_two: public puzzle_solve() API, algo 3 -- OK\n");
+	printf("test_two_by_two: real 2x2x2 solves fully via puzzle_solve(); "
+		"3x3x3 no longer lists it -- OK\n");
 }
 
 int	main(void)
