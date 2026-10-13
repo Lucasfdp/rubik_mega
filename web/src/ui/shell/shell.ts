@@ -154,19 +154,19 @@ export class Shell {
 
     this.#picker = createPuzzlePicker((type, size) => this.#options.callbacks.onPuzzleChange(type, size));
     this.#shortcuts = createShortcutsDialog();
-    this.#settingsDialog = createSettingsDialog(
-      (settings) => {
-        this.#settings = settings;
-        this.#options.callbacks.onSettingsChange(settings);
-      },
-      () => this.showShortcuts(),
-    );
+    this.#settingsDialog = createSettingsDialog((settings) => {
+      this.#settings = settings;
+      this.#options.callbacks.onSettingsChange(settings);
+    });
+    const helpButton = el("button", { class: "icon-button help-button", props: { type: "button" }, attrs: { "aria-label": "Keyboard shortcuts", "aria-haspopup": "dialog" } }, icon("keyboard"));
+    helpButton.addEventListener("click", () => this.showShortcuts());
 
     this.element = el(
       "div",
       { class: "shell" },
       this.#topbar,
       this.#panel,
+      helpButton,
       this.#picker.element,
       this.#settingsDialog.element,
       this.#shortcuts.element,

@@ -57,7 +57,7 @@ function toggle(label: string, hint: string, onToggle: (on: boolean) => void): {
   return { element, set: (on) => void (input.checked = on) };
 }
 
-export function createSettingsDialog(onChange: (settings: Settings) => void, onShowShortcuts: () => void): SettingsDialog {
+export function createSettingsDialog(onChange: (settings: Settings) => void): SettingsDialog {
   let current: Settings;
   const update = (patch: Partial<Settings>): void => {
     current = { ...current, ...patch };
@@ -70,11 +70,6 @@ export function createSettingsDialog(onChange: (settings: Settings) => void, onS
   const palette = segmented("palette", "Sticker colours", PALETTE_CHOICES, PALETTE_LABELS, (value) => update({ palette: value }));
   const glyphs = toggle("Letters on stickers", "Marks every sticker with its face letter or a shape, so colour is never the only clue.", (on) => update({ glyphs: on }));
   const animate = toggle("Animate scramble", "Play the scramble's turns instead of jumping to the result.", (on) => update({ animateScramble: on }));
-  const shortcuts = el("button", { class: "link-button", text: "Keyboard shortcuts", props: { type: "button" } });
-  shortcuts.addEventListener("click", () => {
-    dialog.close();
-    onShowShortcuts();
-  });
   const note = el("p", { class: "segmented__note" });
   quality.element.append(note);
 
@@ -88,7 +83,6 @@ export function createSettingsDialog(onChange: (settings: Settings) => void, onS
     glyphs.element,
     animate.element,
     quality.element,
-    shortcuts,
   );
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) dialog.close();

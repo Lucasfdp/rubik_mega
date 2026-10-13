@@ -54,6 +54,7 @@ const ICONS = {
     stroke: ["M4 6h8", "M18 6h2", "M4 12h2", "M12 12h8", "M4 18h10", "M20 18h0"],
     circles: [[15, 6, 2.2], [9, 12, 2.2], [17, 18, 2.2]],
   },
+  keyboard: { stroke: ["M3.5 6.5h17a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z", "M6.5 10h0", "M10 10h0", "M14 10h0", "M17.5 10h0", "M7.5 14h9"] },
   chevronUp: { stroke: ["M6 15l6-6 6 6"] },
   chevronDown: { stroke: ["M6 9l6 6 6-6"] },
   close: { stroke: ["M6 6l12 12", "M18 6L6 18"] },

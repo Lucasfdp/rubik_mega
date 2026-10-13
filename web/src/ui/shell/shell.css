@@ -114,7 +114,8 @@ body {
   pointer-events: none;
 }
 .shell > .topbar > *,
-.shell > .panel {
+.shell > .panel,
+.shell > .help-button {
   pointer-events: auto;
 }
 
@@ -339,6 +340,10 @@ body {
   display: inline-block;
   padding: 0 0.2em;
   border-radius: 0.25em;
+  cursor: pointer;
+}
+.move:hover {
+  background: var(--border);
 }
 .move--done {
   opacity: 0.4;
@@ -347,6 +352,17 @@ body {
   background: var(--highlight);
   color: var(--highlight-text);
   font-weight: 700;
+}
+
+/* Keyboard-shortcuts button, bottom-left. Hidden on compact: the bottom
+   edge there is the sheet, and a touch device has no keyboard to teach. */
+.help-button {
+  position: absolute;
+  left: calc(var(--safe-left) + 0.75rem);
+  bottom: calc(var(--safe-bottom) + 0.75rem);
+}
+.shell[data-layout="compact"] .help-button {
+  display: none;
 }
 
 /* Compact: the panel is a sheet. --sheet-full is its height and

@@ -14,9 +14,21 @@ export class MoveList {
   #spans: HTMLSpanElement[] = [];
   #cursor = 0;
 
-  constructor(container: HTMLElement, format: (move: Move) => string) {
+  /// `onSeek` gets the clicked chip's index: that move becomes the current
+  /// one (cursor = index), so it has not been applied yet -- the same
+  /// meaning the highlight already has. One listener on the container, not
+  /// one per chip, for the same ~1,800-chip reason as above.
+  constructor(container: HTMLElement, format: (move: Move) => string, onSeek?: (index: number) => void) {
     this.#container = container;
     this.#format = format;
+    if (onSeek) {
+      container.addEventListener("click", (event) => {
+        const chip = (event.target as Element | null)?.closest<HTMLElement>(".move");
+        if (!chip || !container.contains(chip)) return;
+        const index = Number(chip.dataset["i"]);
+        if (Number.isInteger(index)) onSeek(index);
+      });
+    }
   }
 
   render(snapshot: PlaybackSnapshot): void {
@@ -29,6 +41,7 @@ export class MoveList {
         const span = document.createElement("span");
         span.textContent = this.#format(move);
         span.className = chipClass(index, snapshot.cursor);
+        span.dataset["i"] = String(index);
         this.#spans.push(span);
         fragment.appendChild(span);
         fragment.appendChild(document.createTextNode(" "));

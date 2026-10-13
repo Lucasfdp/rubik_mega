@@ -121,7 +121,7 @@ describe("Square-1 through the engine", () => {
       solved.destroy();
       puzzle.destroy();
     }
-  });
+  }, 30_000); // 20 two-phase solves take ~6 s; vitest's default is 5 s.
 });
 
 describe("Square-1 notation", () => {

@@ -146,7 +146,15 @@ export class SolveControls {
       onDone: (ok) => this.#scrambleDone(ok),
       onRunningChange: (running) => this.#scrambleRunning(running),
     });
-    this.#moveList = new MoveList(els.moveList, (move) => formatMoveFor(move, deps.puzzle.layout));
+    this.#moveList = new MoveList(
+      els.moveList,
+      (move) => formatMoveFor(move, deps.puzzle.layout),
+      (index) => {
+        // Pause first: at 16x an auto-playing seek would be walked past at once.
+        this.#playback.pause();
+        this.#playback.seek(index);
+      },
+    );
     this.#timeline = createTimeline({
       onSeek: (cursor) => this.#playback.seek(cursor),
       phaseLabel: (phase) => this.#phaseLabel(phase),
